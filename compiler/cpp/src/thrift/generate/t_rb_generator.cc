@@ -196,6 +196,12 @@ public:
   std::string rb_autogen_comment();
   std::string render_require_thrift();
   std::string render_includes();
+
+  /**
+   * Escapes a string for safe embedding inside a double-quoted Ruby string
+   * literal in generated code.
+   */
+  static std::string escape_ruby_string(const std::string& in);
   void maybe_separate_top_level(t_rb_ofstream& out);
   void mark_top_level_written(t_rb_ofstream& out);
   bool& top_level_separator_state(t_rb_ofstream& out);
@@ -299,12 +305,33 @@ void t_rb_generator::init_generator() {
   types_need_separator_ = !have_modules;
 
   f_consts_ << rb_autogen_comment() << '\n' << render_require_thrift() << "require \""
-            << require_prefix_ << underscore(program_name_) << "_types\"" << '\n';
+            << require_prefix_ << escape_ruby_string(underscore(program_name_)) << "_types\""
+            << '\n';
   if (have_modules) {
     f_consts_ << '\n';
   }
   begin_namespace(f_consts_, modules);
   consts_need_separator_ = !have_modules;
+}
+
+/**
+ * Escapes a string so it can be safely embedded inside a double-quoted Ruby
+ * string literal in generated code. Backslashes and double quotes are
+ * backslash-escaped, and '#' is escaped so it cannot begin a #{...}, #$var or
+ * #@var interpolation sequence when the generated Ruby code is loaded. In
+ * Ruby "\\", "\"" and "\#" evaluate to \, " and # respectively, so the
+ * resulting string value (e.g. the required file name) is unchanged.
+ */
+string t_rb_generator::escape_ruby_string(const std::string& in) {
+  std::string out;
+  out.reserve(in.size());
+  for (char c : in) {
+    if (c == '\\' || c == '"' || c == '#') {
+      out += '\\';
+    }
+    out += c;
+  }
+  return out;
 }
 
 /**
@@ -330,9 +357,10 @@ string t_rb_generator::render_includes() {
       std::string included_require_prefix
           = rb_namespace_to_path_prefix(included->get_namespace("rb"));
       std::string included_name = included->get_name();
-      result += "require \"" + included_require_prefix + underscore(included_name) + "_types\"\n";
+      result += "require \"" + included_require_prefix
+                    + escape_ruby_string(underscore(included_name)) + "_types\"\n";
     } else {
-      result += "require \"" + underscore(include->get_name()) + "_types\"\n";
+      result += "require \"" + escape_ruby_string(underscore(include->get_name())) + "_types\"\n";
     }
   }
   return result;
@@ -898,7 +926,8 @@ void t_rb_generator::generate_service(t_service* tservice) {
     }
   }
 
-  f_service_ << "require \"" << require_prefix_ << underscore(program_name_) << "_types\"" << '\n'
+  f_service_ << "require \"" << require_prefix_ << escape_ruby_string(underscore(program_name_))
+             << "_types\"" << '\n'
              << '\n';
 
   begin_namespace(f_service_, modules);
