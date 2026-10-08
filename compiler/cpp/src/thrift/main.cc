@@ -340,6 +340,54 @@ string directory_name(string filename) {
 }
 
 /**
+ * Checks whether a canonicalized file path is the given directory or is
+ * contained within it. Both paths must already be in canonical form (as
+ * produced by saferealpath), so that a prefix comparison is a valid
+ * containment test.
+ */
+bool path_is_contained(const string& path, const string& dir) {
+  if (dir.empty()) {
+    return false;
+  }
+  if (path == dir) {
+    return true;
+  }
+  string prefix = dir;
+  if (prefix[prefix.size() - 1] != '/') {
+    prefix += '/';
+  }
+  return path.compare(0, prefix.size(), prefix) == 0;
+}
+
+/**
+ * Checks whether a canonicalized include path stays inside a directory the
+ * compiler is allowed to read includes from: the directory of the file the
+ * include directive appears in, or one of the directories given with -I.
+ * This prevents include directives from referencing files elsewhere in the
+ * file system, either with an absolute path or with ".." segments.
+ */
+bool include_path_is_allowed(const string& resolved_path) {
+  // new search path with current dir global
+  vector<string> sp = g_incl_searchpath;
+  sp.insert(sp.begin(), g_curdir);
+
+  // iterate through paths
+  vector<string>::iterator it;
+  for (it = sp.begin(); it != sp.end(); it++) {
+    // Realpath!
+    char dir_rp[THRIFT_PATH_MAX];
+    // cppcheck-suppress uninitvar
+    if (saferealpath(it->c_str(), dir_rp, THRIFT_PATH_MAX) == nullptr) {
+      continue;
+    }
+    if (path_is_contained(resolved_path, dir_rp)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Finds the appropriate file path for the given filename
  */
 string include_file(string filename) {
@@ -356,7 +404,15 @@ string include_file(string filename) {
     // Stat this file
     struct stat finfo;
     if (stat(rp, &finfo) == 0) {
-      return rp;
+      // An absolute include path must still resolve to a file inside the
+      // current directory or one of the include search directories.
+      if (include_path_is_allowed(rp)) {
+        return rp;
+      }
+      pwarning(0,
+               "Include file %s is not in the current directory or the include search path\n",
+               filename.c_str());
+      return std::string();
     }
   } else { // relative path, start searching
     // new search path with current dir global
@@ -378,7 +434,13 @@ string include_file(string filename) {
       // Stat this files
       struct stat finfo;
       if (stat(rp, &finfo) == 0) {
-        return rp;
+        // The resolved path must stay inside the current directory or one
+        // of the include search directories; ".." segments in the file
+        // name must not be able to escape them.
+        if (include_path_is_allowed(rp)) {
+          return rp;
+        }
+        continue;
       }
     }
   }
@@ -965,7 +1027,7 @@ void parse(t_program* program, t_program* parent_program, std::set<std::string>&
       failure("Parser error during include pass.");
     }
   } catch (string &x) {
-    failure(x.c_str());
+    failure("%s", x.c_str());
   }
   fclose(yyin);
 
@@ -1003,7 +1065,7 @@ void parse(t_program* program, t_program* parent_program, std::set<std::string>&
       failure("Parser error during types pass.");
     }
   } catch (string &x) {
-    failure(x.c_str());
+    failure("%s", x.c_str());
   }
   fclose(yyin);
 
