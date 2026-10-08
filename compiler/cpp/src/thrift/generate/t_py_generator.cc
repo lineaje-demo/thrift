@@ -2712,6 +2712,25 @@ void t_py_generator::generate_serialize_list_element(ostream& out, t_list* tlist
 }
 
 /**
+ * Escapes a documentation string for safe embedding in a Python triple-quoted
+ * string literal.  Backslashes and double quotes are escaped so that the text
+ * can neither terminate the literal nor escape its closing delimiter, while
+ * Python interprets the escape sequences such that the resulting docstring
+ * content is unchanged.
+ */
+static string escape_python_docstring(const string& doc) {
+  string escaped;
+  escaped.reserve(doc.size());
+  for (string::const_iterator it = doc.begin(); it != doc.end(); ++it) {
+    if (*it == '\\' || *it == '"') {
+      escaped += '\\';
+    }
+    escaped += *it;
+  }
+  return escaped;
+}
+
+/**
  * Generates the docstring for a given struct.
  */
 void t_py_generator::generate_python_docstring(ostream& out, t_struct* tstruct) {
@@ -2759,7 +2778,7 @@ void t_py_generator::generate_python_docstring(ostream& out,
   }
 
   if (has_doc) {
-    generate_docstring_comment(out, "\"\"\"\n", "", ss.str(), "\"\"\"\n");
+    generate_docstring_comment(out, "\"\"\"\n", "", escape_python_docstring(ss.str()), "\"\"\"\n");
   }
 }
 
@@ -2768,7 +2787,7 @@ void t_py_generator::generate_python_docstring(ostream& out,
  */
 void t_py_generator::generate_python_docstring(ostream& out, t_doc* tdoc) {
   if (tdoc->has_doc()) {
-    generate_docstring_comment(out, "\"\"\"\n", "", tdoc->get_doc(), "\"\"\"\n");
+    generate_docstring_comment(out, "\"\"\"\n", "", escape_python_docstring(tdoc->get_doc()), "\"\"\"\n");
   }
 }
 
