@@ -22,6 +22,7 @@
  */
 
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <limits>
@@ -172,7 +173,13 @@ string t_json_generator::escape_json_string(const string& input) {
       ss << "\\t";
       break;
     default:
-      ss << iter;
+      if (static_cast<unsigned char>(iter) < 0x20 || iter == '\x7f') {
+        // Escape remaining control characters as \u00XX (RFC 8259, section 7).
+        ss << "\\u" << std::hex << std::setw(4) << std::setfill('0')
+           << static_cast<int>(static_cast<unsigned char>(iter)) << std::dec;
+      } else {
+        ss << iter;
+      }
       break;
     }
   }

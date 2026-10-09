@@ -157,7 +157,7 @@ void t_html_generator::generate_program_toc_rows(t_program* tprog,
  */
 void t_html_generator::generate_program_toc_row(t_program* tprog) {
   string fname = tprog->get_name() + ".html";
-  f_out_ << "<tr>" << '\n' << "<td>" << tprog->get_name() << "</td><td>";
+  f_out_ << "<tr>" << '\n' << "<td>" << escape_string(tprog->get_name()) << "</td><td>";
   if (!tprog->get_services().empty()) {
     vector<t_service*> services = tprog->get_services();
     vector<t_service*>::iterator sv_iter;
@@ -254,9 +254,10 @@ void t_html_generator::generate_program() {
   f_out_ << "<head>" << '\n';
   f_out_ << "<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\" />" << '\n';
   generate_style_tag();
-  f_out_ << "<title>Thrift module: " << program_->get_name() << "</title></head><body>" << '\n'
+  f_out_ << "<title>Thrift module: " << escape_string(program_->get_name())
+         << "</title></head><body>" << '\n'
          << "<div class=\"container-fluid\">" << '\n'
-         << "<h1>Thrift module: " << program_->get_name() << "</h1>" << '\n';
+         << "<h1>Thrift module: " << escape_string(program_->get_name()) << "</h1>" << '\n';
 
   print_doc(program_);
 
@@ -388,7 +389,7 @@ void t_html_generator::generate_style_tag() {
  * The returned string is empty, whenever filename refers to the current file.
  */
 std::string t_html_generator::make_file_link(std::string filename) {
-  return (current_file_.compare(filename) != 0) ? filename : "";
+  return (current_file_.compare(filename) != 0) ? escape_string(filename) : "";
 }
 
 /**
@@ -572,7 +573,9 @@ std::string t_html_generator::escape_html_tags(std::string const& str) {
       i = tolower(i);
     }
     if (allowed_markup.find(tag_key) != allowed_markup.end()) {
-      result << "<" << tag_content << ">";
+      // Re-emit only the validated tag name; all attribute text is dropped so
+      // that doc comments cannot inject event handlers or scripted URLs.
+      result << "<" << tag_key << ">";
     } else {
       result << "&lt;" << tagstream.str() << "&gt;";
       pverbose("illegal markup <%s> in doc-comment\n", tag_key.c_str());
@@ -704,7 +707,7 @@ int t_html_generator::print_type(t_type* ttype) {
     f_out_ << type_name << "\">";
     len = type_name.size();
     if (ttype->get_program() != program_) {
-      f_out_ << prog_name << ".";
+      f_out_ << escape_string(prog_name) << ".";
       len += prog_name.size() + 1;
     }
     f_out_ << type_name << "</a>";

@@ -3010,8 +3010,9 @@ void t_java_generator::generate_metadata_for_field_annotations(std::ostream& out
   indent_up();
   indent_up();
   for (auto& annotation : field->annotations_) {
-    indent(out) << ".add(new java.util.AbstractMap.SimpleImmutableEntry<>(\"" + annotation.first
-                       + "\", \"" + annotation.second.back() + "\"))"
+    indent(out) << ".add(new java.util.AbstractMap.SimpleImmutableEntry<>(\""
+                       + escape_string(annotation.first) + "\", \""
+                       + escape_string(annotation.second.back()) + "\"))"
                 << '\n';
   }
   for (auto& annotation : field->get_type()->annotations_) {
@@ -3019,8 +3020,9 @@ void t_java_generator::generate_metadata_for_field_annotations(std::ostream& out
     if (field->annotations_.find(annotation.first) != field->annotations_.end()) {
       continue;
     }
-    indent(out) << ".add(new java.util.AbstractMap.SimpleImmutableEntry<>(\"" + annotation.first
-                       + "\", \"" + annotation.second.back() + "\"))"
+    indent(out) << ".add(new java.util.AbstractMap.SimpleImmutableEntry<>(\""
+                       + escape_string(annotation.first) + "\", \""
+                       + escape_string(annotation.second.back()) + "\"))"
                 << '\n';
   }
   indent(out) << ".build().collect(java.util.stream.Collectors.toMap(java.util.Map.Entry::getKey, "
