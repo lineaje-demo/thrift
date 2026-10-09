@@ -72,6 +72,15 @@ public:
     for( iter = parsed_options.begin(); iter != parsed_options.end(); ++iter) {
       if( iter->first.compare("library_name") == 0) {
         library_name_ = (iter->second);
+        // The library name is used to build output paths, so it must not
+        // contain path separators or other characters outside the set that
+        // find_library_name() can produce ([A-Za-z0-9_]).
+        for (char c : library_name_) {
+          if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+                || (c >= '0' && c <= '9') || c == '_')) {
+            throw "invalid character in dart:library_name: " + library_name_;
+          }
+        }
       } else if( iter->first.compare("library_prefix") == 0) {
         library_prefix_ = (iter->second) + ".";
         package_prefix_ = replace_all(library_prefix_, ".", "/");
