@@ -61,7 +61,6 @@ repositories {
 
 dependencies {
     implementation "org.slf4j:slf4j-api:${slf4jVersion}"
-    implementation "org.apache.httpcomponents.client5:httpclient5:${httpclientVersion}"
     implementation "jakarta.servlet:jakarta.servlet-api:${servletVersion}"
     implementation "jakarta.annotation:jakarta.annotation-api:${javaxAnnotationVersion}"
     implementation "org.apache.commons:commons-lang3:${commonsLang3Version}"
