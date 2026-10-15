@@ -84,12 +84,12 @@ int main(int argc, char **argv)
 	//Process command line params
 	if(argc > 1)
 	{
-		if(_tcscmp(argv[1], TEXT("-sp")) == 0)
+		if(_tcscmp(argv[1], TEXT("-sp")) == 0 && argc > 2)
 		{	//Socket Port specified
 			srvPort = _tstoi(argv[2]);
 			bSocket = true;
 		}
-		else if(_tcscmp(argv[1], TEXT("-np")) == 0)
+		else if(_tcscmp(argv[1], TEXT("-np")) == 0 && argc > 2)
 		{	//Named Pipe specified
 #ifdef _WIN32
                         std::wstring wpipe(argv[2]);
