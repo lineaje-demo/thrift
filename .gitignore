@@ -65,8 +65,6 @@ SKILL.md
 /aclocal/lt*.m4
 /autoscan.log
 /autoscan-*.log
-/build/windows/dotnet-tool/bin
-/build/windows/dotnet-tool/obj
 /cmake_*
 /compiler/cpp/compiler.VC.db
 /compiler/cpp/compiler.VC.VC.opendb
@@ -249,8 +247,6 @@ SKILL.md
 /lib/kotlin/gradlew
 /lib/kotlin/gradlew.bat
 /lib/lua/test/test_socket_send
-/lib/netstd/**/bin
-/lib/netstd/**/obj
 /lib/nodejs/coverage
 /lib/nodejs/node_modules/
 /lib/perl/MANIFEST
@@ -381,16 +377,6 @@ SKILL.md
 /test/php/php_ext_dir/
 /test/py.twisted/_trial_temp/
 /test/rb/vendor/
-/test/netstd/**/bin
-/test/netstd/**/obj
-/test/netstd/**/launchSettings.json
-/test/netstd/*.psess
-/test/netstd/*.vspx
-/test/netstd/*.vsp
-/test/netstd/*.diagsession
-/test/netstd/Client/ThriftTest
-/test/netstd/Server/ThriftTest
-/test/netstd/Thrift
 /test/php/php_ext_dir/
 /test/rs/Cargo.lock
 /test/rs/src/thrift_test.rs
@@ -438,19 +424,12 @@ SKILL.md
 /tutorial/java/build/
 /tutorial/java/.gradle/
 /tutorial/js/build/
-/tutorial/netstd/**/bin
-/tutorial/netstd/**/obj
-/tutorial/netstd/Interfaces
 /tutorial/rs/*.iml
 /tutorial/rs/src/shared.rs
 /tutorial/rs/src/tutorial.rs
 /tutorial/rs/bin
 /tutorial/rs/target
 /tutorial/rs/Cargo.lock
-/tutorial/netstd/Interfaces/shared
-/tutorial/netstd/Interfaces/tutorial
-/tutorial/netstd/Server/Properties/launchSettings.json
-/tutorial/netstd/Client/Properties/launchSettings.json
 /ylwrap
 
 # Unit test generated artifacts
