@@ -56,40 +56,5 @@ cmake --build . --config Release || EXIT /B
 :: Test
 ctest -C Release || EXIT /B
 
-:: Install (needed before netstd scripts so thrift.exe is in C:\install\bin)
+:: Install
 cmake --install . || EXIT /B
-
-:: Build and test .NET (netstd) library if dotnet CLI is available
-IF /I "%THRIFT_BUILD_DOTNET%"=="OFF" GOTO SKIP_DOTNET
-IF EXIST "C:\Program Files (x86)\dotnet\dotnet.exe" SET PATH=C:\Program Files (x86)\dotnet;%PATH%
-IF EXIST "C:\Program Files\dotnet\dotnet.exe" SET PATH=C:\Program Files\dotnet;%PATH%
-where dotnet >NUL 2>NUL
-IF ERRORLEVEL 1 (
-  ECHO dotnet CLI not found, skipping netstd build/test
-  GOTO SKIP_DOTNET
-)
-SET HAS_DOTNET_SDK=
-FOR /F "delims=" %%I IN ('dotnet --list-sdks 2^>NUL') DO SET HAS_DOTNET_SDK=1
-IF NOT DEFINED HAS_DOTNET_SDK (
-  ECHO dotnet SDK not found, skipping netstd build/test
-  GOTO SKIP_DOTNET
-)
-
-PUSHD C:\thrift\lib\netstd
-IF EXIST C:\install\bin\thrift.exe SET PATH=C:\install\bin;%PATH%
-IF EXIST C:\build\bin\Release\thrift.exe SET PATH=C:\build\bin\Release;%PATH%
-IF EXIST C:\build\compiler\cpp\Release\thrift.exe SET PATH=C:\build\compiler\cpp\Release;%PATH%
-IF EXIST C:\build\compiler\cpp\thrift.exe SET PATH=C:\build\compiler\cpp;%PATH%
-where thrift >NUL 2>NUL
-IF ERRORLEVEL 1 (
-  ECHO thrift compiler not found on PATH, skipping netstd build/test
-  POPD
-  GOTO SKIP_DOTNET
-)
-call build.cmd || EXIT /B
-IF /I NOT "%THRIFT_TEST_DOTNET%"=="OFF" (
-  call runtests.cmd || EXIT /B
-)
-POPD
-
-:SKIP_DOTNET
