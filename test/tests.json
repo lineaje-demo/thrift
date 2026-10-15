@@ -595,44 +595,6 @@
     "workdir": "rb/gen-rb"
   },
   {
-    "name": "netstd",
-    "transports": [
-      "buffered",
-      "framed"
-    ],
-    "sockets": [
-      "ip",
-      "ip-ssl"
-    ],
-    "protocols": [
-      "binary",
-      "compact",
-      "json"
-    ],
-    "server": {
-      "command": [
-        "dotnet",
-        "run",
-        "--no-build",
-        "--project=Server/Server.csproj",
-        "--configuration=Release",
-        "server"
-      ]
-    },
-    "client": {
-      "timeout": 10,
-      "command": [
-        "dotnet",
-        "run",
-        "--no-build",
-        "--project=Client/Client.csproj",
-        "--configuration=Release",
-        "client"
-      ]
-    },
-        "workdir": "netstd"
-  },
-  {
     "name": "perl",
     "transports": [
       "buffered",
