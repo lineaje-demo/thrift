@@ -758,7 +758,9 @@ std::string t_markdown_generator::escape_html_tags(std::string const& str) {
       i = (char)tolower((unsigned char)i);
     }
     if (allowed_markup.find(tag_key) != allowed_markup.end()) {
-      result << "<" << tag_content << ">";
+      // Emit only the validated tag name, never the raw tag content:
+      // attributes could carry script URLs or event handlers.
+      result << "<" << tag_key << ">";
     } else {
       result << "&lt;" << tagstream.str() << "&gt;";
       pverbose("illegal markup <%s> in doc-comment\n", tag_key.c_str());

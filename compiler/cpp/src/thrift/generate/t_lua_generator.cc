@@ -40,6 +40,7 @@ public:
     std::map<std::string, std::string>::const_iterator iter;
 
     gen_requires_ = true;
+    escape_['\''] = "\\'";
     for( iter = parsed_options.begin(); iter != parsed_options.end(); ++iter) {
       if( iter->first.compare("omit_requires") == 0) {
         gen_requires_ = false;
@@ -49,6 +50,8 @@ public:
     }
 
     out_dir_base_ = "gen-lua";
+
+    escape_['\''] = "\\'";
   }
 
   /**
@@ -253,7 +256,7 @@ string t_lua_generator::render_const_value(t_type* type, t_const_value* value) {
     t_base_type::t_base tbase = ((t_base_type*)type)->get_base();
     switch (tbase) {
     case t_base_type::TYPE_STRING:
-      out << "'" << value->get_string() << "'";
+      out << "'" << get_escaped_string(value) << "'";
       break;
     case t_base_type::TYPE_BOOL:
       out << (value->get_integer() > 0 ? "true" : "false");
@@ -274,7 +277,7 @@ string t_lua_generator::render_const_value(t_type* type, t_const_value* value) {
       }
       break;
     case t_base_type::TYPE_UUID:
-      out << "TUUIDfromString(" << value->get_string() << ")";
+      out << "TUUIDfromString('" << get_escaped_string(value) << "')";
       break;
     default:
       throw "compiler error: no const of base type " + t_base_type::t_base_name(tbase);

@@ -124,6 +124,47 @@ static bool type_can_be_null(t_type* ttype)
     return ttype->is_container() || ttype->is_struct() || ttype->is_xception() || ttype->is_string();
 }
 
+// C# compilers treat CR, LF, U+0085 (NEL), U+2028 (LS) and U+2029 (PS) as line
+// terminators (ECMA-334). Doc text is emitted as "///" line comments and the
+// frontend lexer passes the raw bytes through, so any of these characters
+// embedded in a docstring would end the comment and let the remaining text be
+// compiled as live code. Replace all of them with a plain line feed so the
+// doc text always stays inside the generated comment lines.
+static string sanitize_docstring(const string& doc)
+{
+    string safe;
+    safe.reserve(doc.size());
+    for (string::size_type i = 0; i < doc.size(); ++i)
+    {
+        const unsigned char c = static_cast<unsigned char>(doc[i]);
+        if (c == '\r')
+        {
+            safe += '\n';
+            if (i + 1 < doc.size() && doc[i + 1] == '\n')
+            {
+                ++i;  // collapse CRLF into a single line feed
+            }
+        }
+        else if (c == 0xC2 && i + 1 < doc.size() && static_cast<unsigned char>(doc[i + 1]) == 0x85)
+        {
+            safe += '\n';  // U+0085 (NEL)
+            ++i;
+        }
+        else if (c == 0xE2 && i + 2 < doc.size() && static_cast<unsigned char>(doc[i + 1]) == 0x80
+                 && (static_cast<unsigned char>(doc[i + 2]) == 0xA8
+                     || static_cast<unsigned char>(doc[i + 2]) == 0xA9))
+        {
+            safe += '\n';  // U+2028 (LS) or U+2029 (PS)
+            i += 2;
+        }
+        else
+        {
+            safe += doc[i];
+        }
+    }
+    return safe;
+}
+
 bool t_netstd_generator::is_wcf_enabled() const { return wcf_; }
 
 bool t_netstd_generator::is_serialize_enabled() const { return serialize_; }
@@ -4225,7 +4266,7 @@ void t_netstd_generator::docstring_comment(ostream& out, const string& comment_s
         out << indent() << comment_start;
     }
 
-    stringstream docs(contents, std::ios_base::in);
+    stringstream docs(sanitize_docstring(contents), std::ios_base::in);
 
     while (!(docs.eof() || docs.fail()))
     {

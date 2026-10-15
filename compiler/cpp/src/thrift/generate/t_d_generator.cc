@@ -670,7 +670,7 @@ private:
     if (ttype->is_container()) {
       t_container* tcontainer = (t_container*)ttype;
       if (tcontainer->has_cpp_name()) {
-        return tcontainer->get_cpp_name();
+        throw "the cpp_type annotation is not supported by the D generator";
       } else if (ttype->is_map()) {
         t_map* tmap = (t_map*)ttype;
         t_type* ktype = tmap->get_key_type();
