@@ -17,7 +17,6 @@ env:
     --disable-dependency-tracking
     --without-java
     --without-kotlin
-    --without-netstd
     --without-nodejs
     --without-nodets
     --without-go
