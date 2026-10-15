@@ -67,10 +67,6 @@ if WITH_DART
 SUBDIRS += dart
 endif
 
-if WITH_DOTNET
-SUBDIRS += netstd
-endif
-
 if WITH_GO
 SUBDIRS += go
 endif
