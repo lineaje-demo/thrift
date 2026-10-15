@@ -131,7 +131,6 @@ if test "$enable_libs" = "no"; then
   with_py3="no"
   with_ruby="no"
   with_haxe="no"
-  with_netstd="no"
   with_perl="no"
   with_php="no"
   with_php_extension="no"
@@ -484,16 +483,6 @@ fi
 AM_CONDITIONAL(WITH_HAXE, [test "$have_haxe" = "yes"])
 
 
-AX_THRIFT_LIB(netstd, [.NET Core], yes)
-if test "$with_netstd" = "yes";  then
-  AC_PATH_PROG([DOTNETCORE], [dotnet])
-  if [[ -x "$DOTNETCORE" ]] ; then
-    AX_PROG_DOTNETCORE_VERSION( [7.0.0], have_netstd="yes", have_netstd="no")
-  fi
-fi
-AM_CONDITIONAL(WITH_DOTNET, [test "$have_netstd" = "yes"])
-
-
 AX_THRIFT_LIB(d, [D], yes)
 if test "$with_d" = "yes";  then
   AX_DMD
@@ -809,7 +798,6 @@ AC_CONFIG_FILES([
   lib/json/Makefile
   lib/json/test/Makefile
   lib/kotlin/Makefile
-  lib/netstd/Makefile
   lib/nodejs/Makefile
   lib/nodets/Makefile
   lib/perl/Makefile
@@ -843,7 +831,6 @@ AC_CONFIG_FILES([
   test/go/Makefile
   test/haxe/Makefile
   test/lua/Makefile
-  test/netstd/Makefile
   test/php/Makefile
   test/dart/Makefile
   test/perl/Makefile
@@ -861,7 +848,6 @@ AC_CONFIG_FILES([
   tutorial/haxe/Makefile
   tutorial/java/Makefile
   tutorial/js/Makefile
-  tutorial/netstd/Makefile
   tutorial/nodejs/Makefile
   tutorial/dart/Makefile
   tutorial/perl/Makefile
@@ -907,8 +893,6 @@ if test "$have_lua" = "yes" ; then MAYBE_LUA="lua" ; else MAYBE_LUA="" ; fi
 AC_SUBST([MAYBE_LUA])
 if test "$have_rs" = "yes" ; then MAYBE_RS="rs" ; else MAYBE_RS="" ; fi
 AC_SUBST([MAYBE_RS])
-if test "$have_netstd" = "yes" ; then MAYBE_NETSTD="netstd" ; else MAYBE_NETSTD="" ; fi
-AC_SUBST([MAYBE_NETSTD])
 if test "$have_cl" = "yes" ; then MAYBE_CL="cl" ; else MAYBE_CL="" ; fi
 AC_SUBST([MAYBE_CL])
 
@@ -923,7 +907,6 @@ echo "Building C++ Library ......... : $have_cpp"
 echo "Building Common Lisp Library.. : $have_cl"
 echo "Building D Library ........... : $have_d"
 echo "Building Dart Library ........ : $have_dart"
-echo "Building .NET Standard Library : $have_netstd"
 echo "Building Erlang Library ...... : $have_erlang"
 echo "Building Go Library .......... : $have_go"
 echo "Building Haxe Library ........ : $have_haxe"
@@ -972,12 +955,6 @@ if test "$have_dart" = "yes" ; then
   echo "   Using Dart ................ : $DART"
   echo "   Using Pub ................. : $DARTPUB"
   echo "   Using Dart version ........ : $($DART --version 2>&1)"
-fi
-if test "$have_netstd" = "yes" ; then
-  echo
-  echo ".NET Standard Library:"
-  echo "   Using dotnet .............. : $DOTNETCORE"
-  echo "   Using dotnet version ...... : $DOTNETCORE_VERSION"
 fi
 if test "$have_erlang" = "yes" ; then
   echo
