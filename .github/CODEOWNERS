@@ -82,9 +82,6 @@
 /tutorial/cpp/                @emmenlau @mhlakhani
 
 # .NET
-/lib/netstd/                  @Jens-G
-/test/netstd/                 @Jens-G
-/tutorial/netstd/             @Jens-G
 
 # Delphi
 /lib/delphi/                  @Jens-G
