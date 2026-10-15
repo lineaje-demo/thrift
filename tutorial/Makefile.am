@@ -54,10 +54,6 @@ if WITH_HAXE
 SUBDIRS += haxe
 endif
 
-if WITH_DOTNET
-SUBDIRS += netstd
-endif
-
 if WITH_GO
 SUBDIRS += go
 endif
