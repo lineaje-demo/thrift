@@ -18,7 +18,9 @@
  */
 
 #include "TZmqServer.h"
+#include <thrift/TOutput.h>
 #include <thrift/transport/TBufferTransports.h>
+#include <boost/scoped_array.hpp>
 #include <boost/scoped_ptr.hpp>
 
 using apache::thrift::std::shared_ptr;
@@ -41,14 +43,29 @@ bool TZmqServer::serveOne(int recv_flags) {
       outputProtocolFactory_->getProtocol(outputTransport));
   shared_ptr<TMemoryBuffer> transport(new TMemoryBuffer);
 
-  processor_->process(inputProtocol, outputProtocol, nullptr);
+  try {
+    processor_->process(inputProtocol, outputProtocol, nullptr);
+  } catch (const transport::TTransportException& ttx) {
+    // The peer sent an empty, truncated or malformed frame.  Log it and
+    // keep serving; the exception must not escape and kill the server.
+    TOutput::instance().printf("TZmqServer transport error in process(): %s", ttx.what());
+  } catch (const std::exception& ex) {
+    TOutput::instance().printf("TZmqServer uncaught exception in process(): %s", ex.what());
+  } catch (...) {
+    TOutput::instance()("TZmqServer unknown exception in process()");
+  }
 
   if (zmq_type_ == ZMQ_REP) {
+    // A ZMQ_REP socket must reply to every received message before it can
+    // receive again, so send a (possibly empty) reply even when processing
+    // failed above.
     uint8_t* buf;
     uint32_t size;
     outputTransport->getBuffer(&buf, &size);
     msg.rebuild(size);
-    std::memcpy(msg.data(), buf, size);
+    if (size != 0) {
+      std::memcpy(msg.data(), buf, size);
+    }
     (void)sock_.send(msg);
   }
 
@@ -57,13 +74,13 @@ bool TZmqServer::serveOne(int recv_flags) {
 
 
 void TZmqMultiServer::serveOne(long timeout) {
-  boost::scoped_ptr<zmq::pollitem_t> items(setupPoll());
+  boost::scoped_array<zmq::pollitem_t> items(setupPoll());
   serveActive(items.get(), timeout);
 }
 
 
 void TZmqMultiServer::serveForever() {
-  boost::scoped_ptr<zmq::pollitem_t> items(setupPoll());
+  boost::scoped_array<zmq::pollitem_t> items(setupPoll());
   while (true) {
     serveActive(items.get(), -1);
   }

@@ -114,6 +114,7 @@ private:
   void write_attribute(string key, string val);
   void write_int_attribute(string key, int val);
   string escape_xml_string(const string& input);
+  string sanitize_xml_name(const string& input);
 
   void write_xml_comment(string msg);
 
@@ -186,7 +187,7 @@ string t_xml_generator::target_namespace(t_program* program) {
   if ((iter = map.find("*")) != map.end()) {
     return default_ns_prefix + iter->second;
   }
-  return default_ns_prefix + program->get_name();
+  return default_ns_prefix + sanitize_xml_name(program->get_name());
 }
 
 void t_xml_generator::write_xml_comment(string msg) {
@@ -230,7 +231,7 @@ void t_xml_generator::write_element_end() {
 }
 
 void t_xml_generator::write_attribute(string key, string val) {
-  f_xml_ << " " << key << "=\"" << escape_xml_string(val) << "\"";
+  f_xml_ << " " << sanitize_xml_name(key) << "=\"" << escape_xml_string(val) << "\"";
 }
 
 void t_xml_generator::write_int_attribute(string key, int val) {
@@ -273,6 +274,38 @@ string t_xml_generator::escape_xml_string(const string& input) {
     }
   }
   return ss.str();
+}
+
+/**
+ * XML attribute names cannot be escaped, so a name that is derived from an
+ * unrestricted string (such as the program name, which comes from the input
+ * file name) must be reduced to a well-formed XML name (QName): ASCII
+ * letters and '_' are kept anywhere, digits, '-' and '.' are kept except
+ * where a name start character is required (position 0 and right after the
+ * QName ':'), and a single interior ':' is kept.  Everything else is
+ * replaced with '_'.
+ */
+string t_xml_generator::sanitize_xml_name(const string& input) {
+  std::ostringstream ss;
+  bool colon_seen = false;
+  for (string::size_type i = 0; i < input.size(); ++i) {
+    const char c = input[i];
+    const bool need_start = (i == 0) || (input[i - 1] == ':');
+    bool legal = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+    if (!legal && !need_start) {
+      legal = (c >= '0' && c <= '9') || c == '-' || c == '.'
+              || (c == ':' && !colon_seen && i + 1 < input.size());
+    }
+    if (c == ':') {
+      colon_seen = true;
+    }
+    ss << (legal ? c : '_');
+  }
+  string result = ss.str();
+  if (result.empty()) {
+    result = "_";
+  }
+  return result;
 }
 
 void t_xml_generator::close_generator() {
