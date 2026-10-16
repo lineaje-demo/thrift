@@ -90,6 +90,57 @@ private:
 
   std::string xsd(std::string in) { return ns(in, "xsd"); }
 
+  /**
+   * Escape a string for safe inclusion in an XML attribute value or
+   * element body.
+   */
+  static std::string escape_xml_string(const std::string& in) {
+    std::string out;
+    for (char c : in) {
+      switch (c) {
+      case '&':
+        out += "&amp;";
+        break;
+      case '"':
+        out += "&quot;";
+        break;
+      case '\'':
+        out += "&apos;";
+        break;
+      case '<':
+        out += "&lt;";
+        break;
+      case '>':
+        out += "&gt;";
+        break;
+      default:
+        out.push_back(c);
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Escape a string for safe inclusion in a single-quoted PHP string
+   * literal (only backslash and single quote are special there).
+   */
+  static std::string escape_php_string(const std::string& in) {
+    std::string out;
+    for (char c : in) {
+      switch (c) {
+      case '\\':
+        out += "\\\\";
+        break;
+      case '\'':
+        out += "\\'";
+        break;
+      default:
+        out.push_back(c);
+      }
+    }
+    return out;
+  }
+
   std::string type_name(t_type* ttype);
   std::string base_type_name(t_base_type::t_base tbase);
 
@@ -202,8 +253,9 @@ void t_xsd_generator::generate_element(ostream& out,
         } else {
           subname = type_name(subtype);
         }
-        f_php_ << "$GLOBALS['" << program_->get_name() << "_xsd_elt_" << name << "'] = '" << subname
-               << "';" << '\n';
+        f_php_ << "$GLOBALS['" << escape_php_string(program_->get_name()) << "_xsd_elt_"
+               << escape_php_string(name) << "'] = '" << escape_php_string(subname) << "';"
+               << '\n';
         generate_element(out, subname, subtype, nullptr, false, false, true);
         indent_down();
         indent(out) << "</xsd:sequence>" << '\n';
@@ -269,7 +321,8 @@ void t_xsd_generator::generate_service(t_service* tservice) {
     ns = uri->second.back();
   }
   if (ns.size() > 0) {
-    ns = " targetNamespace=\"" + ns + "\" xmlns=\"" + ns + "\" "
+    string escaped_ns = escape_xml_string(ns);
+    ns = " targetNamespace=\"" + escaped_ns + "\" xmlns=\"" + escaped_ns + "\" "
          + "elementFormDefault=\"qualified\"";
   }
 
