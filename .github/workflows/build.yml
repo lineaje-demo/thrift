@@ -418,7 +418,6 @@ jobs:
             lib/java/build/runclient
             lib/java/build/runnonblockingserver
             lib/java/build/runserver
-            lib/java/build/runservletserver
           retention-days: 3
 
       - name: Run make for kotlin
