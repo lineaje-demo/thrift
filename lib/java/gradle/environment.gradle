@@ -37,10 +37,7 @@ ext.apacheRepo = property('apache.repo')
 ext.mavenRepositoryUrl = property('maven-repository-url')
 
 // Versions used in this project
-ext.httpclientVersion = property('httpclient.version')
-ext.httpcoreVersion = property('httpcore.version')
 ext.servletVersion = property('servlet.version')
-ext.tomcatEmbedVersion = property('tomcat.embed.version')
 ext.slf4jVersion = property('slf4j.version')
 ext.junitVersion = property('junit.version')
 ext.mockitoVersion = property('mockito.version')
