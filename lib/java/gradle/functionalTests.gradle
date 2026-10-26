@@ -52,7 +52,6 @@ configurations {
 }
 
 dependencies {
-    crossTestImplementation "org.apache.tomcat.embed:tomcat-embed-core:${tomcatEmbedVersion}"
     crossTestImplementation sourceSets.main.output
     crossTestImplementation sourceSets.test.output
 }
@@ -64,7 +63,7 @@ dependencies {
 shadowJar {
     description = 'Assemble a test JAR file for cross-check execution'
     // make sure the runners are created when this runs
-    dependsOn 'generateRunnerScriptForClient', 'generateRunnerScriptForNonblockingClient', 'generateRunnerScriptForServer', 'generateRunnerScriptForNonblockingServer', 'generateRunnerScriptForTServletServer'
+    dependsOn 'generateRunnerScriptForClient', 'generateRunnerScriptForNonblockingClient', 'generateRunnerScriptForServer', 'generateRunnerScriptForNonblockingServer'
     archiveBaseName.set('functionalTest')
     destinationDirectory = file("$buildDir/functionalTestJar")
     // We do not need a version number for this internal jar
@@ -169,27 +168,6 @@ task generateRunnerScriptForNonblockingServer(group: 'Build') {
 ${scriptHead}
 
 "${javaExe}" -cp "$jarPath" "-Djavax.net.ssl.keyStore=$serverKeyStore" -Djavax.net.ssl.keyStorePassword=thrift org.apache.thrift.test.TestNonblockingServer $args
-"""
-
-    inputs.property 'runServerText', runServerText
-    outputs.file serverFile
-
-    doLast {
-        serverFile.parentFile.mkdirs()
-        serverFile.text = runServerText
-        serverFile.setExecutable(true, false)
-    }
-}
-
-task generateRunnerScriptForTServletServer(group: 'Build') {
-    description = 'Generate a runner script for cross-check tests with TestTServletServer'
-
-    def serverFile = file("$buildDir/runservletserver${scriptExt}")
-
-    def runServerText = """\
-${scriptHead}
-
-"${javaExe}" -cp "$jarPath" "-Djavax.net.ssl.keyStore=$serverKeyStore" -Djavax.net.ssl.keyStorePassword=thrift org.apache.thrift.test.TestTServletServer $args
 """
 
     inputs.property 'runServerText', runServerText
