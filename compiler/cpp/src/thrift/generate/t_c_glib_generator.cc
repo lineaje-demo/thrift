@@ -753,7 +753,7 @@ string t_c_glib_generator::constant_literal(t_type* type, t_const_value* value) 
 
     switch (tbase) {
     case t_base_type::TYPE_STRING:
-      render << "\"" + value->get_string() + "\"";
+      render << "\"" + get_escaped_string(value) + "\"";
       break;
     case t_base_type::TYPE_BOOL:
       render << ((value->get_integer() != 0) ? "TRUE" : "FALSE");
@@ -815,7 +815,7 @@ string t_c_glib_generator::constant_value(string name, t_type* type, t_const_val
     t_base_type::t_base tbase = ((t_base_type*)type)->get_base();
     switch (tbase) {
     case t_base_type::TYPE_STRING:
-      render << "g_strdup (\"" + value->get_string() + "\")";
+      render << "g_strdup (\"" + get_escaped_string(value) + "\")";
       break;
     case t_base_type::TYPE_BOOL:
       render << ((value->get_integer() != 0) ? 1 : 0);
@@ -3367,7 +3367,7 @@ void t_c_glib_generator::generate_object(t_struct* tstruct) {
             f_types_impl_ << "g_param_spec_string (\"" << member_name << "\"," << '\n'
                           << args_indent << "NULL," << '\n' << args_indent << "NULL," << '\n'
                           << args_indent
-                          << ((member_value != NULL) ? "\"" + member_value->get_string() + "\""
+                          << ((member_value != NULL) ? "\"" + get_escaped_string(member_value) + "\""
                                                      : "NULL") << "," << '\n' << args_indent
                           << "G_PARAM_READWRITE));" << '\n';
           }

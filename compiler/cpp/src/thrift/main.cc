@@ -965,7 +965,7 @@ void parse(t_program* program, t_program* parent_program, std::set<std::string>&
       failure("Parser error during include pass.");
     }
   } catch (string &x) {
-    failure(x.c_str());
+    failure("%s", x.c_str());
   }
   fclose(yyin);
 
@@ -1003,7 +1003,7 @@ void parse(t_program* program, t_program* parent_program, std::set<std::string>&
       failure("Parser error during types pass.");
     }
   } catch (string &x) {
-    failure(x.c_str());
+    failure("%s", x.c_str());
   }
   fclose(yyin);
 
