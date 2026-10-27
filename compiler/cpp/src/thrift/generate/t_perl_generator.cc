@@ -56,6 +56,14 @@ public:
     }
 
     out_dir_base_ = "gen-perl";
+    // String constants and struct field default values are rendered inside
+    // double-quoted Perl string literals (see render_const_value). Escape
+    // every character that is special in that context so IDL-supplied text
+    // can neither terminate the literal nor trigger interpolation: the
+    // delimiter '"' and the escape character '\\' must be escaped, not only
+    // '$' and '@' (which would otherwise interpolate scalars/arrays).
+    escape_['"'] = "\\\"";
+    escape_['\\'] = "\\\\";
     escape_['$'] = "\\$";
     escape_['@'] = "\\@";
   }
