@@ -733,20 +733,20 @@ void t_rs_generator::render_const_value(t_type* ttype,
     case t_base_type::TYPE_STRING:
       if (tbase_type->is_binary()) {
         if (is_owned) {
-          f_gen_ << "\"" << tvalue->get_string() << "\""
+          f_gen_ << "\"" << get_escaped_string(tvalue) << "\""
                  << ".to_owned().into_bytes()";
         } else {
-          f_gen_ << "b\"" << tvalue->get_string() << "\"";
+          f_gen_ << "b\"" << get_escaped_string(tvalue) << "\"";
         }
       } else {
-        f_gen_ << "\"" << tvalue->get_string() << "\"";
+        f_gen_ << "\"" << get_escaped_string(tvalue) << "\"";
         if (is_owned) {
           f_gen_ << ".to_owned()";
         }
       }
       break;
     case t_base_type::TYPE_UUID:
-      f_gen_ << "Uuid::parse_str(\"" << tvalue->get_string() << "\").unwrap()";
+      f_gen_ << "Uuid::parse_str(\"" << get_escaped_string(tvalue) << "\").unwrap()";
       break;
     case t_base_type::TYPE_BOOL:
       f_gen_ << (tvalue->get_integer() ? "true" : "false");

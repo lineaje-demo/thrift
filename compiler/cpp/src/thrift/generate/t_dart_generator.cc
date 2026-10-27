@@ -83,6 +83,9 @@ public:
     }
 
     out_dir_base_ = "gen-dart";
+
+    escape_['\''] = "\\'";
+    escape_['$'] = "\\$";
   }
 
   void scope_up(std::ostream& out, std::string prefix=" ") {

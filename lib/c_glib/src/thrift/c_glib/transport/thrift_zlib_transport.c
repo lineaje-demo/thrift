@@ -120,14 +120,28 @@ thrift_zlib_transport_read_from_zlib(ThriftTransport *transport, GError **error)
   }
 
   /* If we don't have any more compressed data available,
-   * read some from the underlying transport.
-   */
-    got = THRIFT_TRANSPORT_GET_CLASS(t->transport)->read (t->transport, t->crbuf, 1, error);
-    if (got < 0) {
+   * read some from the underlying transport.  Fill the whole
+   * compressed buffer: requesting a single byte per refill costs one
+   * underlying read (one syscall on a socket) and one inflate() call
+   * for every compressed byte the peer sends.  Compressed bytes that
+   * inflate() did not consume are kept in crbuf, so next_in/avail_in
+   * are only reset on an actual refill. */
+  if (t->rstream->avail_in == 0) {
+    got = THRIFT_TRANSPORT_GET_CLASS(t->transport)->read (t->transport,
+                                                          t->crbuf,
+                                                          t->crbuf_size,
+                                                          error);
+    if (got <= 0) {
+      if (got == 0 && (error == NULL || *error == NULL)) {
+        g_set_error (error, THRIFT_TRANSPORT_ERROR,
+                     THRIFT_TRANSPORT_ERROR_RECEIVE,
+                     "failed to read compressed data from the underlying transport");
+      }
       return -1;
     }
     t->rstream->next_in = t->crbuf;
     t->rstream->avail_in = got;
+  }
 
     /* We have some compressed data now.  Uncompress it. */
     zlib_rv = inflate (t->rstream, Z_SYNC_FLUSH);
@@ -153,51 +167,45 @@ thrift_zlib_transport_read_from_zlib(ThriftTransport *transport, GError **error)
 /* implements thrift_transport_read */
 gint32
 thrift_zlib_transport_read_slow (ThriftTransport *transport, gpointer buf,
-                            GError **error)
+                            guint32 len, GError **error)
 {
   ThriftZlibTransport *t = THRIFT_ZLIB_TRANSPORT (transport);
-  gint *buf_tmp = buf;
-  gint32 need = 1;
+  gint8 *buf_tmp = buf;
+  gint32 need = len;
   gint give;
   gint32 ret = 0;
 
   while(TRUE)
   {
-    if ((guint32)thrift_zlib_transport_read_avail (transport) < 1) {
-      give = thrift_zlib_transport_read_avail (transport);
-    } else {
-      give = need;
-    }
+    give = MIN (need, thrift_zlib_transport_read_avail (transport));
     memcpy (buf_tmp, t->urbuf+t->urpos, give);
-    if (give > need) {
-      need = 0;
-    } else {
-      need -= give;
-    }
+    need -= give;
     buf_tmp += give;
     t->urpos += give;
 
     /* If they were satisfied, we are done. */
     if (need == 0) {
-      return 1;
+      return len;
     }
-    
+
     /* If we will need to read from the underlying transport to get more data,
      * but we already have some data available, return it now.  Reading from
      * the underlying transport may block, and read() is only allowed to block
-     * when no data is available.
+     * when no data is available.  Compressed bytes still sitting in crbuf can
+     * be inflated without blocking, so only return early once a refill would
+     * be required.
      */
-    if (need < 1 && t->rstream->avail_in == 0) {
-      return give;
+    if (need < (gint32)len && t->rstream->avail_in == 0) {
+      return len - need;
     }
 
     /* If we get to this point, we need to get some more data. */
 
     /* If zlib has reported the end of a stream, we can't really do any more.
-     * Nothing was copied on this pass, so say so: answering 1 would tell the
-     * caller a byte it never received is sitting in its buffer. */
+     * Report how many bytes were actually copied: answering len would tell
+     * the caller bytes it never received are sitting in its buffer. */
     if (t->input_ended) {
-      return 0;
+      return len - need;
     }
 
     /* The uncompressed read buffer is empty, so reset the stream fields. */
@@ -206,15 +214,12 @@ thrift_zlib_transport_read_slow (ThriftTransport *transport, gpointer buf,
     t->urpos = 0;
 
     /* Call inflate() to uncompress some more data. */
-    if ((ret = thrift_zlib_transport_read_from_zlib(transport, error)) == 0) {
-      /* no data available from underlying transport -- again, nothing was
-       * copied on this pass. */
-      return 0;
-    } else {
-      if (ret < 0) {
-        return -1;
-      }
+    if ((ret = thrift_zlib_transport_read_from_zlib(transport, error)) < 0) {
+      return ret;
     }
+    /* A 0 return means inflate() reached the end of the stream.  That same
+     * call may still have produced bytes into urbuf, so loop back and hand
+     * them out; input_ended now prevents any further refill. */
   }
   /* Okay.  The read buffer should have whatever we can give it now. */
   /* Loop back to the start and try to give some more. */
@@ -224,7 +229,6 @@ gint32
 thrift_zlib_transport_read (ThriftTransport *transport, gpointer buf,
                              guint32 len, GError **error)
 {
-  ThriftZlibTransport *t = THRIFT_ZLIB_TRANSPORT (transport);
   ThriftTransportClass *ttc = THRIFT_TRANSPORT_GET_CLASS (transport);
   guint32 i;
   gint32 ret;
@@ -234,21 +238,20 @@ thrift_zlib_transport_read (ThriftTransport *transport, gpointer buf,
   }
 
   for (i=0; i < len; ) {
-    ret = thrift_zlib_transport_read_slow (transport, ((char*)buf)+i, error);
+    gint32 want = len - i;
+    ret = thrift_zlib_transport_read_slow (transport, ((char*)buf)+i, want,
+                                           error);
     if (ret < 0) {
       return ret;
     }
-    /* read_slow() answers with the number of bytes it produced.  Zero means
-     * the stream is finished or the transport underneath has nothing more, so
-     * stop here rather than counting bytes that were never written. */
-    if (ret == 0) {
+    /* read_slow() answers with the number of bytes it produced.  A short
+     * count means the stream is finished or producing more would block on
+     * the underlying transport, so stop here rather than counting bytes
+     * that were never written. */
+    i = i + ret;
+    if (ret < want) {
       break;
     }
-
-    i = i + ret;
-
-    if (t->input_ended)
-      break;
   }
 
   if (!ttc->countConsumedMessageBytes (transport, i, error)) {
