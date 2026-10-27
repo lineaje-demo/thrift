@@ -1605,6 +1605,12 @@ void t_go_generator::generate_go_struct_definition(ostream& out,
 
       string gotag;
       for (auto it = tags.begin(); it != tags.end(); ++it) {
+        // The tags are written into a backtick-delimited raw string literal
+        // in the generated Go code; a backtick in a tag would terminate that
+        // literal early, so reject it instead of emitting unsafe code.
+        if (it->first.find('`') != string::npos || it->second.find('`') != string::npos) {
+          throw "compiler error: go struct tag must not contain a backtick";
+        }
         gotag += it->first + ":\"" + it->second + "\" ";
       }
       // Trailing whitespace
@@ -4982,6 +4988,16 @@ string t_go_generator::type_to_spec_args(t_type* ttype) {
 
 // parses a string of struct tags into key/value pairs and writes them to the given map
 void t_go_generator::parse_go_tags(map<string,string>* tags, const string in) {
+  // The parsed tags are emitted verbatim into the backtick-delimited raw
+  // string literal of a Go struct tag in the generated code. A backtick
+  // would terminate that literal (raw string literals have no escapes) and a
+  // line break would violate the one-line-per-field emission contract,
+  // either of which allows injecting arbitrary Go code into the generated
+  // source, so reject them up front.
+  if (in.find_first_of("`\r\n") != string::npos) {
+    throw "Invalid go.tag annotation: backtick and line break characters are not allowed";
+  }
+
   string key;
   string value;
 
@@ -5038,7 +5054,12 @@ bool t_go_generator::generate_deprecation_comment(ostream& out, const map<string
       } else {
         out << "; ";
       }
-      out << *str_iter;
+      // The reason is written into a line comment in the generated Go code,
+      // so keep it on a single line to avoid breaking out of the comment.
+      string reason(*str_iter);
+      std::replace(reason.begin(), reason.end(), '\n', ' ');
+      std::replace(reason.begin(), reason.end(), '\r', ' ');
+      out << reason;
     }
     if (first) {
       // All deprecation annotations are empty, put a generic reason here

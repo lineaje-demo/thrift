@@ -651,7 +651,7 @@ void go_validator_generator::generate_string_field_validator(std::ostream& out,
         out << get_field_reference_name(values[0]->get_field_reference());
         out << ")";
       } else {
-        out << "\"" << values[0]->get_string() << "\"";
+        out << "\"" << go_generator->escape_string(values[0]->get_string()) << "\"";
       }
     } else if (key == "vt.min_size" || key == "vt.max_size") {
       out << indent() << "if len(" << target << ") ";
@@ -687,6 +687,13 @@ void go_validator_generator::generate_string_field_validator(std::ostream& out,
         out << ", " << target << "); !ok";
       } else {
         std::string pattern = values[0]->get_string();
+        // The pattern is written into a backtick-delimited raw string literal
+        // (regexp.MustCompile(`...`)) in the generated Go code; a backtick in
+        // the pattern would terminate that literal early, so reject it
+        // instead of emitting unsafe code.
+        if (pattern.find('`') != std::string::npos) {
+          throw "compiler error: vt.pattern must not contain a backtick";
+        }
         std::string var_name;
         bool found = false;
         for (auto& entry : pattern_cache_) {
@@ -709,7 +716,7 @@ void go_validator_generator::generate_string_field_validator(std::ostream& out,
         out << get_field_reference_name(values[0]->get_field_reference());
         out << ")";
       } else {
-        out << "\"" << values[0]->get_string() << "\"";
+        out << "\"" << go_generator->escape_string(values[0]->get_string()) << "\"";
       }
       out << ")";
     } else if (key == "vt.suffix") {
@@ -719,7 +726,7 @@ void go_validator_generator::generate_string_field_validator(std::ostream& out,
         out << get_field_reference_name(values[0]->get_field_reference());
         out << ")";
       } else {
-        out << "\"" << values[0]->get_string() << "\"";
+        out << "\"" << go_generator->escape_string(values[0]->get_string()) << "\"";
       }
       out << ")";
     } else if (key == "vt.contains") {
@@ -729,7 +736,7 @@ void go_validator_generator::generate_string_field_validator(std::ostream& out,
         out << get_field_reference_name(values[0]->get_field_reference());
         out << ")";
       } else {
-        out << "\"" << values[0]->get_string() << "\"";
+        out << "\"" << go_generator->escape_string(values[0]->get_string()) << "\"";
       }
       out << ")";
     } else if (key == "vt.not_contains") {
@@ -739,7 +746,7 @@ void go_validator_generator::generate_string_field_validator(std::ostream& out,
         out << get_field_reference_name(values[0]->get_field_reference());
         out << ")";
       } else {
-        out << "\"" << values[0]->get_string() << "\"";
+        out << "\"" << go_generator->escape_string(values[0]->get_string()) << "\"";
       }
       out << ")";
     }
