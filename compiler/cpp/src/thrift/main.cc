@@ -324,6 +324,11 @@ string program_name(string filename) {
   if (dot != string::npos) {
     filename = filename.substr(0, dot);
   }
+  // The program name is used to build output file paths, so it must be a
+  // usable file name component and must never be a path traversal segment.
+  if (filename.empty() || filename == "." || filename == "..") {
+    failure("Program name \"%s\" is not a valid file name", filename.c_str());
+  }
   return filename;
 }
 
@@ -965,7 +970,7 @@ void parse(t_program* program, t_program* parent_program, std::set<std::string>&
       failure("Parser error during include pass.");
     }
   } catch (string &x) {
-    failure(x.c_str());
+    failure("%s", x.c_str());
   }
   fclose(yyin);
 
@@ -1003,7 +1008,7 @@ void parse(t_program* program, t_program* parent_program, std::set<std::string>&
       failure("Parser error during types pass.");
     }
   } catch (string &x) {
-    failure(x.c_str());
+    failure("%s", x.c_str());
   }
   fclose(yyin);
 

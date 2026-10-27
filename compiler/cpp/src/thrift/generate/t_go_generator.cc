@@ -5038,7 +5038,21 @@ bool t_go_generator::generate_deprecation_comment(ostream& out, const map<string
       } else {
         out << "; ";
       }
-      out << *str_iter;
+      // The annotation value is attacker-controlled and may contain line
+      // breaks (e.g. from a "\n" escape in the IDL). Escape them so the
+      // value can never terminate the line comment and inject Go code.
+      for (char ch : *str_iter) {
+        switch (ch) {
+        case '\n':
+          out << "\\n";
+          break;
+        case '\r':
+          out << "\\r";
+          break;
+        default:
+          out << ch;
+        }
+      }
     }
     if (first) {
       // All deprecation annotations are empty, put a generic reason here
