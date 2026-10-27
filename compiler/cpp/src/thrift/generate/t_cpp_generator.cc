@@ -22,6 +22,7 @@
  */
 
 #include <cassert>
+#include <cctype>
 
 #include <fstream>
 #include <iomanip>
@@ -455,6 +456,31 @@ private:
   friend class ProcessorGenerator;
 };
 
+namespace {
+
+/**
+ * Returns true if the given cpp_include value is safe to emit inside a C++
+ * #include directive.  Only characters that may legitimately appear in a
+ * header path or an angle-bracket header name are allowed; anything else
+ * (quotes, backslashes, newlines, control characters, ...) could be used to
+ * break out of the generated directive and inject arbitrary text into the
+ * generated sources.
+ */
+bool is_valid_cpp_include(const std::string& include) {
+  if (include.empty()) {
+    return false;
+  }
+  for (const char c : include) {
+    if (std::isalnum(static_cast<unsigned char>(c)) == 0 && c != '<' && c != '>' && c != '/'
+        && c != '.' && c != '_' && c != '-' && c != '+' && c != ' ') {
+      return false;
+    }
+  }
+  return true;
+}
+
+} // namespace
+
 /**
  * Prepares for file generation by opening up the necessary file output
  * streams.
@@ -519,6 +545,10 @@ void t_cpp_generator::init_generator() {
   // Include custom headers
   const vector<string>& cpp_includes = program_->get_cpp_includes();
   for (const auto & cpp_include : cpp_includes) {
+    if (!is_valid_cpp_include(cpp_include)) {
+      throw "invalid cpp_include value: only letters, digits, '/', '.', '_', '-', '+', '<', '>'"
+            " and spaces are allowed";
+    }
     if (cpp_include[0] == '<') {
       f_types_ << "#include " << cpp_include << '\n';
     } else {
